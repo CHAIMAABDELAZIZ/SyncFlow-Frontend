@@ -46,19 +46,21 @@ function AuthIngnr() {
     };
 
     return (
-        <div className="bg-bgblue w-full max-w-lg flex items-center justify-center p-4">
-            <div className="p-9 shadow-lg  h-[82vh] max-w-lg rounded-[30px] bg-whitePtrm">
-                {/* Logo + Title */}
-                <div className="flex items-center justify-center">
-                    <img src={logo} alt="Petrium Logo" className="h-16 object-contain" />
+        <div className="bg-bgblue w-full max-w-lg flex items-center justify-center p-1 sm:p-4  ">
+            <div className=" p-4 sm:p-8 shadow-lg   h-[83vh] w-full  max-w-lg rounded-[30px] bg-whitePtrm">
+              {/* Logo + Title */}
+              <div className="flex flex-col items-center">
+                    <img src={logo} alt="Petrium Logo" className="h-14 sm:h-16 object-contain" />
+                    <p className="text-sm text-bgblue mt-4 sm:mt-6 text-center">
+                        Connect to your account to continue
+                    </p>
                 </div>
                 
-                <p className="text-sm text-bgblue  mx-3 mb-2  mt-10 text-start  block ">       Connect to your account to continue</p>
                 {/* Role Toggle */}
-                <div className="flex justify-center mb-6 gap-[1px]">
+                <div className="flex justify-center my-4 sm:my-6 gap-[1px]">
                     <button
                         onClick={() => setRole('manager')}
-                        className={`p-3 rounded-r-none text-sm font-medium ${
+                        className={`p-2 sm:p-3 text-xs sm:text-sm font-medium rounded-r-none ${
                             role === 'manager'
                                 ? 'bg-orangePtrm text-white focus:outline-none' 
                                 : 'bg-whitePtrm border-[2px] border-bgblue text-bgblue hover:border-orangePtrm'
@@ -68,7 +70,7 @@ function AuthIngnr() {
                     </button>
                     <button
                         onClick={() => setRole('wellengineer')}
-                        className={`p-3 rounded-l-none text-sm font-medium ${
+                        className={`p-2 sm:p-3 text-xs sm:text-sm font-medium rounded-l-none ${
                             role === 'wellengineer'
                                 ? 'bg-orangePtrm text-white focus:outline-none'
                                 : 'bg-whitePtrm border-[2px] border-bgblue text-bgblue hover:border-orangePtrm'
@@ -79,15 +81,15 @@ function AuthIngnr() {
                 </div>
 
                 {/* Login Form */}
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} className={`${error ? 'space-y-1' : 'space-y-3 sm:space-y-4'}`}>
                     {/* Username */} 
                     <div>
                         <label className={`text-sm font-medium text-start mb-1 block transition-colors duration-200 ${
                             isFocused || username ? 'text-orange-500' : 'text-bgblue'}`}>
                             Nom d'utilisateur
                         </label>
-                        <div className={`flex items-center border rounded-lg bg-white px-2${
-                                isFocused ? ' border-orangePtrm' : ' border'}`}>
+                        <div className={`flex items-center border rounded-lg bg-white px-2 ${
+                            isFocused ? 'border-orangePtrm' : 'border'}`}>
                             <span className={`transition-colors duration-200 pr-2 ${
                                 isFocused || username ? 'text-orangePtrm' : 'text-bgblue'}`}> 
                                 <IoMdPerson />
@@ -109,13 +111,13 @@ function AuthIngnr() {
                     </div>
 
                     {/* Password */}
-                    <div className={`${error ? '' : 'pb-7'}`} >
+                    <div className={`${error ? '' : 'pb-5 '}`}>
                         <label className={`text-sm font-medium text-start mb-1 block transition-colors duration-200 ${
                             isFocusedmdp || password ? 'text-orange-500' : 'text-bgblue'}`}>
                             Mot de passe
                         </label>
-                        <div className={`flex items-center border rounded-lg bg-white px-2${
-                                isFocusedmdp ? ' border-orangePtrm' : ' border'}`}>
+                        <div className={`flex items-center border rounded-lg bg-white px-2 ${
+                            isFocusedmdp ? 'border-orangePtrm' : 'border'}`}>
                             <span className={`transition-colors duration-200 pr-2 ${
                                 isFocusedmdp || password ? 'text-orangePtrm' : 'text-bgblue'}`}> 
                                 <IoMdLock />
@@ -140,7 +142,7 @@ function AuthIngnr() {
                     
                     {/* Error message */}
                     {error && (
-                        <div className="text-red-500 text-sm text-center">
+                        <div className="text-red-500 text-sm text-center pb-1">
                             {error}
                         </div>
                     )}
