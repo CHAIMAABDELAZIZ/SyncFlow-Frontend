@@ -4,17 +4,17 @@ export default function BorrowersByState() {
     // Data to match exactly what's in the image
     const totalAmount = "$25.5M";
     const statesData = [
-        { state: "QLD", amount: "$18.5M", color: "#f44336" }, // red
-        { state: "SA", amount: "$3.9M", color: "#ff9800" },   // orange
-        { state: "WA", amount: "$3.2M", color: "#8bc34a" },   // green
-        { state: "VIC", amount: "$0M", color: "#cccccc" }     // grey
+        { state: "Phase1", amount: "$18.5M", color: "#f44336" }, // red
+        { state: "Phase2", amount: "$3.9M", color: "#ff9800" },   // orange
+        { state: "Phase3", amount: "$3.2M", color: "#8bc34a" },   // green
+        { state: "Phase4", amount: "$0M", color: "#cccccc" }     // grey
     ];
 
     return (
         <div className="bg-white p-6 rounded-xl w-[1800px] max-w-3xl shadow-sm h-full">
             {/* Header */}
             <div className="flex justify-between items-center mb-10">
-                <h1 className="text-3xl  text-gray-900">Borrowers by State</h1>
+                <h1 className="text-3xl  text-gray-900">Phases</h1>
                 <div className="flex items-center space-x-2">
                     <button className="p-2">
                         <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
