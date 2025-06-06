@@ -11,7 +11,7 @@ import Home from './pages/Home';
 import Engineers from './components/Engineers';
 import PrvsReport from './pages/PrvsReport';
 import WellDetail from './pages/WellDetail';
-
+import DailyReport from './pages/DailyReport';
 function App() {
   return (
     <BrowserRouter>
@@ -25,8 +25,12 @@ function App() {
           <Route path="/engineers" element={<Engineers />} />
           <Route path="/submit-report" element={<SubmitReport />} />
           <Route path="/submit-provisional" element={<SubmitProvisional />} />
-          <Route path="/home" element={<WellDetail/>} /> 
-          {/* <PrvsReport/>  <Reports/> <Home /> */}
+          <Route path="/home" element={<Home/>} /> 
+          <Route path="/welldetail" element={<WellDetail/>} /> 
+          <Route path="/PrvsReport" element={<PrvsReport/> } /> 
+          <Route path="/Reports" element={<Reports/> } /> 
+          <Route path="/dailyreport" element={<DailyReport/> } /> 
+          {/*   <Home /> */}
         </Route>
       </Routes>
     </BrowserRouter>

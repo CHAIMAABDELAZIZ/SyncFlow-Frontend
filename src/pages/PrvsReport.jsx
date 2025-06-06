@@ -12,8 +12,8 @@ export default function PrvsReport() {
           </div> */}
           
           {/* The new reports table component */}
-          {/* <PrvsnlForm/> */}
-          <DailyReportForm/>
+          <PrvsnlForm/>
+          {/* <DailyReportForm/> */}
         </div>
   )
 }
