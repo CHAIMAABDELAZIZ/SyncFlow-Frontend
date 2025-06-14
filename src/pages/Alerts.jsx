@@ -3,12 +3,12 @@ import { MoreVertical, ChevronDown, Search, Filter } from 'lucide-react';
 
 // Mock data
 const mockAlerts = [
-    { id: 1, type: 'Dépassement des couts', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Critical', recommendation: 'Madirnich absent ya mahvoudi pls pls pls' },
-    { id: 2, type: 'Dépassement des délais', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Medium', recommendation: 'Madirnich absent ya mahvoudi pls pls pls' },
-    { id: 3, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Critical', recommendation: 'Madirnich absent ya mahvoudi pls pls pls' },
-    { id: 4, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Low', recommendation: 'Madirnich absent ya mahvoudi pls pls pls' },
-    { id: 5, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Medium', recommendation: 'Madirnich absent ya mahvoudi pls pls pls' },
-    { id: 6, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Critical', recommendation: 'Madirnich absent ya mahvoudi pls pls pls' },
+    { id: 1, type: 'Dépassement des couts', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Critical', recommendation: 'recommendation 1 ' },
+    { id: 2, type: 'Dépassement des délais', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Medium', recommendation: 'recommendation   2 ' },
+    { id: 3, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Critical', recommendation: 'recommendation  3' },
+    { id: 4, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Low', recommendation: 'recommendation  4' },
+    { id: 5, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Medium', recommendation: 'recommendation 5' },
+    { id: 6, type: 'TBD', well: 'Well #A-109', date: '29 Apr, 2025', severity: 'Critical', recommendation: 'recommendation 6' },
 ];
 
 function getSeverityColor(severity) {
@@ -81,12 +81,12 @@ export default function Alerts() {
     };
 
     return (
-        <div className="bg-[#FEFCFA] min-h-screen p-8">
+        <div className="bg-[#FEFCFA] text-black min-h-screen p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col mb-6">
                     <h1 className="text-3xl font-bold text-gray-900">Alerts</h1>
-                    <p className="text-gray-500">détail khrj tehna a écrire</p>
+                    <p className="text-gray-500">list of alerts 2025</p>
                 </div>
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

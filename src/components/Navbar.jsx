@@ -33,7 +33,7 @@ const Navbar = () => {
         <div className="flex items-center ml-4">
           <div className="h-10 w-10 rounded-lg bg-gray-200 overflow-hidden">
             <img
-              src="/api/placeholder/40/40"
+              src="chaima.jpeg"
               alt="Profile"
               className="h-full w-full object-cover"
             />
