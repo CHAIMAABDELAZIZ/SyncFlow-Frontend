@@ -457,7 +457,7 @@ export default function DailyReportForm() {
         currentPhase: formData.currentPhase,
         currentDepth: parseFloat(formData.currentDepth) || 0,
         lithology: formData.lithology,
-        dailyCost: totalAdditionalCost, // Use calculated total instead of form input
+        dailyCost: totalAdditionalCost,
       };
 
       // Create daily report
@@ -482,6 +482,9 @@ export default function DailyReportForm() {
 
       const createdDailyReport = dailyReportResult.data;
 
+      // Track updated operations for problem detection
+      const updatedOperationIds = [];
+
       // Update existing operations with additional costs
       for (const operation of formData.operations) {
         if (operation.existingOperationId && operation.additionalCost > 0) {
@@ -505,8 +508,8 @@ export default function DailyReportForm() {
                 description: currentOperation.description,
                 typeOperation: currentOperation.typeOperation,
                 coutPrev: currentOperation.coutPrev,
-                coutReel: newCoutReel, // Add additional cost to existing coutReel
-                statut: "EN_COURS", // Mark as in progress
+                coutReel: newCoutReel,
+                statut: "EN_COURS",
                 dailyReport: { id: createdDailyReport.id },
               };
 
@@ -525,6 +528,7 @@ export default function DailyReportForm() {
                 console.log(
                   `Updated operation ${operation.existingOperationId} with additional cost: ${operation.additionalCost}`
                 );
+                updatedOperationIds.push(operation.existingOperationId);
 
                 // Create indicators for this operation if any
                 if (operation.indicators && operation.indicators.length > 0) {
@@ -596,7 +600,6 @@ export default function DailyReportForm() {
 
         let isFirstReportForPhase = true;
         if (phaseReportsData.success && phaseReportsData.data.length > 0) {
-          // Check if any existing report uses this phase (excluding the one we just created)
           console.log(
             "Checking existing reports for phase:",
             phaseReportsData.data
@@ -630,7 +633,7 @@ export default function DailyReportForm() {
         // If this is the first daily report for this phase, set the real start date
         if (isFirstReportForPhase) {
           console.log("Setting dateDebutReelle to:", formData.reportDate);
-          updatedPhase.dateDebutReelle = formData.reportDate; // This should already be in YYYY-MM-DD format
+          updatedPhase.dateDebutReelle = formData.reportDate;
         } else {
           // Preserve existing dateDebutReelle
           updatedPhase.dateDebutReelle = formData.currentPhase.dateDebutReelle;
@@ -642,7 +645,7 @@ export default function DailyReportForm() {
             "Phase marked as completed, setting dateFinReelle to:",
             formData.reportDate
           );
-          updatedPhase.dateFinReelle = formData.reportDate; // This should already be in YYYY-MM-DD format
+          updatedPhase.dateFinReelle = formData.reportDate;
         }
 
         console.log("Phase update payload:", updatedPhase);
@@ -664,10 +667,6 @@ export default function DailyReportForm() {
             "Phase update response status:",
             phaseUpdateResponse.status
           );
-          console.log(
-            "Phase update response headers:",
-            Object.fromEntries(phaseUpdateResponse.headers.entries())
-          );
 
           if (!phaseUpdateResponse.ok) {
             const errorText = await phaseUpdateResponse.text();
@@ -688,20 +687,74 @@ export default function DailyReportForm() {
             );
           } else {
             console.log("Phase updated successfully");
-            console.log("Updated phase data returned:", phaseUpdateResult.data);
           }
         } catch (phaseUpdateError) {
           console.error("Error updating phase:", phaseUpdateError);
-          console.error("Phase update error stack:", phaseUpdateError.stack);
           alert(
             "Warning: Error updating phase data - " + phaseUpdateError.message
           );
         }
       }
 
-      alert(
-        `Daily report created successfully! Total additional cost of ${totalAdditionalCost.toLocaleString()} DZD has been added to operations and forage.`
-      );
+      // NEW: Trigger automatic problem detection
+      console.log("=== TRIGGERING PROBLEM DETECTION ===");
+      try {
+        const problemDetectionResponse = await fetch(
+          "http://localhost:8080/api/problemes/detect",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              dailyReportId: createdDailyReport.id,
+              updatedOperationIds: updatedOperationIds,
+            }),
+          }
+        );
+
+        if (problemDetectionResponse.ok) {
+          const problemDetectionResult = await problemDetectionResponse.json();
+          if (
+            problemDetectionResult.success &&
+            problemDetectionResult.data.length > 0
+          ) {
+            console.log(
+              `Detected ${problemDetectionResult.data.length} problems:`,
+              problemDetectionResult.data
+            );
+
+            // Show user notification about detected problems
+            const problemSummary = problemDetectionResult.data
+              .map((p) => `• ${p.type}: ${p.description.substring(0, 100)}...`)
+              .join("\n");
+
+            alert(
+              `Daily report created successfully! Total additional cost of ${totalAdditionalCost.toLocaleString()} DZD has been added.\n\n` +
+                `⚠️ ${problemDetectionResult.data.length} problem(s) were automatically detected:\n${problemSummary}\n\n` +
+                `These problems have been added to the alerts system for review.`
+            );
+          } else {
+            alert(
+              `Daily report created successfully! Total additional cost of ${totalAdditionalCost.toLocaleString()} DZD has been added to operations and forage.`
+            );
+          }
+        } else {
+          console.warn(
+            "Problem detection failed, but daily report was created successfully"
+          );
+          alert(
+            `Daily report created successfully! Total additional cost of ${totalAdditionalCost.toLocaleString()} DZD has been added to operations and forage.`
+          );
+        }
+      } catch (problemDetectionError) {
+        console.error("Error in problem detection:", problemDetectionError);
+        alert(
+          `Daily report created successfully! Total additional cost of ${totalAdditionalCost.toLocaleString()} DZD has been added to operations and forage.\n\n` +
+            `Note: Automatic problem detection encountered an error, but the report was saved successfully.`
+        );
+      }
+
       navigate(`/welldetails/${puitId}/`);
     } catch (error) {
       console.error("Error creating daily report:", error);
@@ -714,6 +767,11 @@ export default function DailyReportForm() {
   // Handle form discard
   const handleDiscard = () => {
     navigate(`/puits/${puitId}`);
+  };
+
+  // Filter phases to show only active phases (no real end date)
+  const getAvailablePhases = () => {
+    return phases.filter((phase) => !phase.dateFinReelle);
   };
 
   if (loading) {
@@ -804,7 +862,7 @@ export default function DailyReportForm() {
                   required
                 >
                   <option value="">Select a phase</option>
-                  {phases.map((phase) => (
+                  {getAvailablePhases().map((phase) => (
                     <option key={phase.id} value={phase.id}>
                       Phase {phase.numeroPhase} -{" "}
                       {phase.diametre?.replace("POUCES_", "").replace("_", " ")}{" "}
@@ -943,7 +1001,9 @@ export default function DailyReportForm() {
 
           {!formData.currentPhase && (
             <div className="text-center py-4 text-yellow-600 bg-yellow-50 rounded-md mb-4">
-              Please select a phase first to see available operations.
+              {getAvailablePhases().length === 0
+                ? "No active phases available. All phases for this well have been completed."
+                : "Please select a phase first to see available operations."}
             </div>
           )}
 
