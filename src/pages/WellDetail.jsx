@@ -877,8 +877,8 @@ export default function WellDetail() {
                       {operation.typeOperation?.nom || "Unknown"}
                     </td>
                     <td className="py-4 px-6">
-                      {operation.coutPrevu
-                        ? `${operation.coutPrevu.toLocaleString()}`
+                      {operation.coutPrev
+                        ? `${operation.coutPrev.toLocaleString()}`
                         : "N/A"}
                     </td>
                     <td className="py-4 px-6">

@@ -14,6 +14,10 @@ export default function DailyReportForm() {
   const [typeOperations, setTypeOperations] = useState([]);
   const [typeIndicateurs, setTypeIndicateurs] = useState([]);
 
+  // New state for existing operations
+  const [availableOperations, setAvailableOperations] = useState([]);
+  const [operationsLoading, setOperationsLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     reportName: "",
     reportDate: new Date().toISOString().split("T")[0],
@@ -93,6 +97,40 @@ export default function DailyReportForm() {
     }
   }, [puitId]);
 
+  // Fetch available operations when phase is selected
+  const fetchAvailableOperations = async (phaseId) => {
+    if (!phaseId) {
+      setAvailableOperations([]);
+      return;
+    }
+
+    try {
+      setOperationsLoading(true);
+      const response = await fetch(
+        `http://localhost:8080/api/operations/phase/${phaseId}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        // Filter only planned operations that haven't been completed
+        const plannedOperations = data.data.filter(
+          (op) => op.statut === "PLANIFIE" || op.statut === "EN_COURS"
+        );
+        setAvailableOperations(plannedOperations);
+        console.log(
+          `Found ${plannedOperations.length} available operations for phase ${phaseId}`
+        );
+      } else {
+        setAvailableOperations([]);
+      }
+    } catch (error) {
+      console.error("Error fetching available operations:", error);
+      setAvailableOperations([]);
+    } finally {
+      setOperationsLoading(false);
+    }
+  };
+
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -109,7 +147,14 @@ export default function DailyReportForm() {
     setFormData({
       ...formData,
       currentPhase: selectedPhase,
+      operations: [], // Clear operations when phase changes
     });
+
+    if (selectedPhase) {
+      fetchAvailableOperations(selectedPhase.id);
+    } else {
+      setAvailableOperations([]);
+    }
   };
 
   // Handle operation status toggle
@@ -176,16 +221,31 @@ export default function DailyReportForm() {
 
   // Add new operation
   const addOperation = () => {
+    if (!formData.currentPhase) {
+      alert("Please select a phase first");
+      return;
+    }
+
+    if (availableOperations.length === 0) {
+      alert(
+        "No available operations for this phase. Please create operations in the provisional plan first."
+      );
+      return;
+    }
+
     const newId = Date.now(); // Temporary ID for UI
 
     const newOperation = {
       id: newId,
-      status: "PLANIFIE",
+      existingOperationId: null, // Will be set when user selects an operation
+      existingOperation: null,
+      status: "EN_COURS",
       description: "",
-      typeOperation: typeOperations[0] || null,
+      typeOperation: null,
       coutReel: 0,
+      additionalCost: 0, // New field for additional cost to add to existing coutReel
       phase: formData.currentPhase,
-      statut: "PLANIFIE",
+      statut: "EN_COURS",
       indicators: [],
     };
 
@@ -285,6 +345,74 @@ export default function DailyReportForm() {
     );
   };
 
+  // Handle existing operation selection
+  const handleExistingOperationChange = (operationId, existingOpId) => {
+    const updatedOperations = [...formData.operations];
+    const operationIndex = updatedOperations.findIndex(
+      (op) => op.id === operationId
+    );
+
+    if (operationIndex !== -1) {
+      const selectedExistingOp = availableOperations.find(
+        (op) => op.id.toString() === existingOpId
+      );
+
+      if (selectedExistingOp) {
+        updatedOperations[operationIndex] = {
+          ...updatedOperations[operationIndex],
+          existingOperationId: selectedExistingOp.id,
+          existingOperation: selectedExistingOp,
+          description: selectedExistingOp.description,
+          typeOperation: selectedExistingOp.typeOperation,
+          additionalCost: 0, // Reset additional cost when changing operation
+        };
+      }
+
+      setFormData({
+        ...formData,
+        operations: updatedOperations,
+      });
+    }
+  };
+
+  // Calculate total additional cost from operations
+  const calculateTotalAdditionalCost = () => {
+    return formData.operations.reduce((total, operation) => {
+      return total + (operation.additionalCost || 0);
+    }, 0);
+  };
+
+  // Update daily cost whenever operations change
+  React.useEffect(() => {
+    const totalAdditionalCost = calculateTotalAdditionalCost();
+    setFormData((prev) => ({
+      ...prev,
+      dailyCost: totalAdditionalCost.toString(),
+    }));
+  }, [formData.operations]);
+
+  // Handle additional cost change (this will be added to existing coutReel)
+  const handleAdditionalCostChange = (operationId, value) => {
+    const cost = parseFloat(value) || 0;
+    if (cost < 0) {
+      alert("Additional cost must be non-negative");
+      return;
+    }
+
+    const updatedOperations = [...formData.operations];
+    const operationIndex = updatedOperations.findIndex(
+      (op) => op.id === operationId
+    );
+
+    if (operationIndex !== -1) {
+      updatedOperations[operationIndex].additionalCost = cost;
+      setFormData({
+        ...formData,
+        operations: updatedOperations,
+      });
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -299,8 +427,19 @@ export default function DailyReportForm() {
       return;
     }
 
+    // Validate that all operations have been properly selected
+    for (const operation of formData.operations) {
+      if (!operation.existingOperationId) {
+        alert("Please select an existing operation for all added operations");
+        return;
+      }
+    }
+
     try {
       setSaving(true);
+
+      // Calculate total daily cost from additional costs
+      const totalAdditionalCost = calculateTotalAdditionalCost();
 
       // Check if this is the first daily report for this puit
       const existingReportsResponse = await fetch(
@@ -310,7 +449,7 @@ export default function DailyReportForm() {
       const isFirstDailyReport =
         !existingReportsData.success || existingReportsData.data.length === 0;
 
-      // Prepare daily report data
+      // Prepare daily report data with calculated daily cost
       const dailyReportData = {
         reportName: formData.reportName,
         reportDate: formData.reportDate,
@@ -318,7 +457,7 @@ export default function DailyReportForm() {
         currentPhase: formData.currentPhase,
         currentDepth: parseFloat(formData.currentDepth) || 0,
         lithology: formData.lithology,
-        dailyCost: parseFloat(formData.dailyCost) || 0,
+        dailyCost: totalAdditionalCost, // Use calculated total instead of form input
       };
 
       // Create daily report
@@ -343,66 +482,84 @@ export default function DailyReportForm() {
 
       const createdDailyReport = dailyReportResult.data;
 
-      // Calculate total operations cost
-      let totalOperationsCost = 0;
-
-      // Create operations and indicators
+      // Update existing operations with additional costs
       for (const operation of formData.operations) {
-        if (operation.status === "PLANIFIE" || operation.status) {
-          // Only create active operations
-          const operationData = {
-            description: operation.description,
-            phase: formData.currentPhase,
-            typeOperation: operation.typeOperation,
-            statut: operation.status === true ? "TERMINE" : operation.status,
-            coutReel: operation.coutReel || 0,
-            coutPrev: operation.coutReel || 0,
-            dailyReport: { id: createdDailyReport.id },
-          };
-
-          // Add to total operations cost
-          totalOperationsCost += operation.coutReel || 0;
-
-          const operationResponse = await fetch(
-            "http://localhost:8080/api/operations",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(operationData),
-            }
+        if (operation.existingOperationId && operation.additionalCost > 0) {
+          // Fetch current operation data
+          const currentOpResponse = await fetch(
+            `http://localhost:8080/api/operations/${operation.existingOperationId}`
           );
 
-          const operationResult = await operationResponse.json();
+          if (currentOpResponse.ok) {
+            const currentOpData = await currentOpResponse.json();
 
-          if (operationResult.success && operation.indicators.length > 0) {
-            // Create indicators for this operation
-            for (const indicator of operation.indicators) {
-              if (indicator.typeIndicateur && indicator.valeurReelle) {
-                const indicatorData = {
-                  operation: { id: operationResult.data.id },
-                  typeIndicateur: indicator.typeIndicateur,
-                  valeurReelle: parseFloat(indicator.valeurReelle) || 0,
-                  commentaire: indicator.commentaire,
-                  dateMesure: new Date().toISOString(),
-                  dailyReport: { id: createdDailyReport.id },
-                };
+            if (currentOpData.success) {
+              const currentOperation = currentOpData.data;
+              const newCoutReel =
+                (currentOperation.coutReel || 0) + operation.additionalCost;
 
-                await fetch("http://localhost:8080/api/indicateurs", {
-                  method: "POST",
+              // Update the operation with new coutReel
+              const updatePayload = {
+                id: operation.existingOperationId,
+                phase: { id: formData.currentPhase.id },
+                description: currentOperation.description,
+                typeOperation: currentOperation.typeOperation,
+                coutPrev: currentOperation.coutPrev,
+                coutReel: newCoutReel, // Add additional cost to existing coutReel
+                statut: "EN_COURS", // Mark as in progress
+                dailyReport: { id: createdDailyReport.id },
+              };
+
+              const updateResponse = await fetch(
+                `http://localhost:8080/api/operations/${operation.existingOperationId}`,
+                {
+                  method: "PUT",
                   headers: {
                     "Content-Type": "application/json",
                   },
-                  body: JSON.stringify(indicatorData),
-                });
+                  body: JSON.stringify(updatePayload),
+                }
+              );
+
+              if (updateResponse.ok) {
+                console.log(
+                  `Updated operation ${operation.existingOperationId} with additional cost: ${operation.additionalCost}`
+                );
+
+                // Create indicators for this operation if any
+                if (operation.indicators && operation.indicators.length > 0) {
+                  for (const indicator of operation.indicators) {
+                    if (indicator.typeIndicateur && indicator.valeurReelle) {
+                      const indicatorData = {
+                        operation: { id: operation.existingOperationId },
+                        typeIndicateur: indicator.typeIndicateur,
+                        valeurReelle: parseFloat(indicator.valeurReelle) || 0,
+                        commentaire: indicator.commentaire,
+                        dateMesure: new Date().toISOString(),
+                        dailyReport: { id: createdDailyReport.id },
+                      };
+
+                      await fetch("http://localhost:8080/api/indicateurs", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(indicatorData),
+                      });
+                    }
+                  }
+                }
+              } else {
+                console.error(
+                  `Failed to update operation ${operation.existingOperationId}`
+                );
               }
             }
           }
         }
       }
 
-      // Update forage data
+      // Update forage data with calculated total
       if (forage) {
         const updatedForage = { ...forage };
 
@@ -411,10 +568,8 @@ export default function DailyReportForm() {
           updatedForage.date_debut = formData.reportDate;
         }
 
-        // Add daily cost and operations cost to forage cost
-        const totalDailyCost =
-          (parseFloat(formData.dailyCost) || 0) + totalOperationsCost;
-        updatedForage.cout = (updatedForage.cout || 0) + totalDailyCost;
+        // Add calculated daily cost to forage cost
+        updatedForage.cout = (updatedForage.cout || 0) + totalAdditionalCost;
 
         await fetch(`http://localhost:8080/api/forages/${forage.id}`, {
           method: "PUT",
@@ -544,7 +699,9 @@ export default function DailyReportForm() {
         }
       }
 
-      alert("Daily report created successfully!");
+      alert(
+        `Daily report created successfully! Total additional cost of ${totalAdditionalCost.toLocaleString()} DZD has been added to operations and forage.`
+      );
       navigate(`/welldetails/${puitId}/`);
     } catch (error) {
       console.error("Error creating daily report:", error);
@@ -705,15 +862,18 @@ export default function DailyReportForm() {
                 Daily Cost (DZD)
               </label>
               <input
-                type="number"
+                type="text"
                 name="dailyCost"
-                value={formData.dailyCost}
-                onChange={handleInputChange}
-                className="bg-white w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                placeholder="0"
-                step="0.01"
-                style={{ colorScheme: "light" }}
+                value={`${parseFloat(
+                  formData.dailyCost || 0
+                ).toLocaleString()}`}
+                className="bg-gray-100 w-full border border-gray-300 rounded px-3 py-2 text-gray-900 cursor-not-allowed"
+                placeholder="Auto-calculated from operations"
+                readOnly
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Auto-calculated from additional operation costs
+              </p>
             </div>
           </div>
 
@@ -748,24 +908,59 @@ export default function DailyReportForm() {
           </div>
         </div>
 
-        {/* Operations Section */}
+        {/* Operations Section - Modified */}
         <div className="bg-white rounded-lg p-6 border shadow-md border-gray-200">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-semibold text-gray-900">
               Operations Performed
             </h2>
-            <button
-              type="button"
-              onClick={addOperation}
-              className="bg-orange-500 text-white hover:bg-orange-600 hover:text-gray-900 transition-all duration-200 flex items-center px-4 py-2 rounded-md shadow-sm focus:ring-2 focus:ring-orange-500 focus:outline-none"
-            >
-              <Plus size={16} className="mr-1" /> Add Operation
-            </button>
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Total Additional Cost:{" "}
+                <span className="font-semibold text-orange-600">
+                  {calculateTotalAdditionalCost().toLocaleString()} DZD
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={addOperation}
+                disabled={!formData.currentPhase || operationsLoading}
+                className={`bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200 flex items-center px-4 py-2 rounded-md shadow-sm focus:ring-2 focus:ring-orange-500 focus:outline-none ${
+                  !formData.currentPhase || operationsLoading
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                <Plus size={16} className="mr-1" /> Add Operation
+              </button>
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mb-7">
-            Add all operations performed on this day and specify their details
-            and costs.
+          <p className="text-sm text-gray-600 mb-4">
+            Select from existing planned operations and add any additional costs
+            incurred. The daily cost will be automatically calculated from the
+            total additional costs.
           </p>
+
+          {!formData.currentPhase && (
+            <div className="text-center py-4 text-yellow-600 bg-yellow-50 rounded-md mb-4">
+              Please select a phase first to see available operations.
+            </div>
+          )}
+
+          {operationsLoading && (
+            <div className="text-center py-4 text-blue-600 bg-blue-50 rounded-md mb-4">
+              Loading available operations...
+            </div>
+          )}
+
+          {formData.currentPhase &&
+            !operationsLoading &&
+            availableOperations.length === 0 && (
+              <div className="text-center py-4 text-orange-600 bg-orange-50 rounded-md mb-4">
+                No planned operations found for this phase. Please create
+                operations in the provisional plan first.
+              </div>
+            )}
 
           <div className="space-y-4">
             {formData.operations.map((operation) => (
@@ -782,45 +977,31 @@ export default function DailyReportForm() {
                 </button>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 mb-3">
-                  <div className="flex items-center space-x-3 col-span-1">
-                    <div className="flex-col items-center justify-between w-20">
-                      <span className="text-sm text-gray-900">Status</span>
-                      <button
-                        type="button"
-                        className={`flex h-6 w-12 mt-2 items-center rounded-full p-1 transition-colors duration-200 ease-in-out focus:outline-none ${
-                          operation.status === true ||
-                          operation.status === "TERMINE"
-                            ? "bg-orange-500 justify-end"
-                            : "bg-gray-300 justify-start"
-                        }`}
-                        onClick={() =>
-                          handleOperationStatusChange(operation.id)
-                        }
-                      >
-                        <span className="h-4 w-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in-out" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="col-span-1">
+                  <div className="col-span-2">
                     <label className="block text-sm mb-1 text-gray-900">
-                      Operation Type
+                      Select Existing Operation
                     </label>
                     <div className="relative">
                       <select
-                        value={operation.typeOperation?.code || ""}
+                        value={operation.existingOperationId || ""}
                         onChange={(e) =>
-                          handleOperationTypeChange(
+                          handleExistingOperationChange(
                             operation.id,
                             e.target.value
                           )
                         }
                         className="bg-white w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-orange-500 appearance-none"
+                        required
                       >
-                        <option value="">Select operation type</option>
-                        {typeOperations.map((type) => (
-                          <option key={type.code} value={type.code}>
-                            {type.nom}
+                        <option value="">Select an operation</option>
+                        {availableOperations.map((availableOp) => (
+                          <option key={availableOp.id} value={availableOp.id}>
+                            {availableOp.typeOperation?.nom ||
+                              availableOp.description}
+                            {availableOp.coutPrev > 0 &&
+                              ` (Planned: ${availableOp.coutPrev.toLocaleString()} DZD)`}
+                            {availableOp.coutReel > 0 &&
+                              ` (Current Real: ${availableOp.coutReel.toLocaleString()} DZD)`}
                           </option>
                         ))}
                       </select>
@@ -844,41 +1025,67 @@ export default function DailyReportForm() {
 
                   <div className="col-span-1">
                     <label className="block text-sm mb-1 text-gray-900">
-                      Description
-                    </label>
-                    <input
-                      type="text"
-                      value={operation.description}
-                      onChange={(e) =>
-                        handleOperationDescriptionChange(
-                          operation.id,
-                          e.target.value
-                        )
-                      }
-                      className="bg-white w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                      placeholder="Operation description"
-                    />
-                  </div>
-
-                  <div className="col-span-1">
-                    <label className="block text-sm mb-1 text-gray-900">
-                      Cost (DZD)
+                      Additional Cost (DZD)
                     </label>
                     <input
                       type="number"
-                      value={operation.coutReel}
+                      value={operation.additionalCost || ""}
                       onChange={(e) =>
-                        handleCostChange(operation.id, e.target.value)
+                        handleAdditionalCostChange(operation.id, e.target.value)
                       }
                       className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-orange-500"
                       placeholder="0"
                       step="0.01"
+                      min="0"
                       style={{ colorScheme: "light" }}
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Added to existing real cost & daily total
+                    </p>
+                  </div>
+
+                  <div className="col-span-1">
+                    <label className="block text-sm mb-1 text-gray-900">
+                      Cost Summary
+                    </label>
+                    <div className="mt-2">
+                      {operation.existingOperation && (
+                        <div className="text-sm text-gray-600">
+                          <p>
+                            Planned:{" "}
+                            {operation.existingOperation.coutPrev?.toLocaleString() ||
+                              0}{" "}
+                            DZD
+                          </p>
+                          <p>
+                            Current Real:{" "}
+                            {operation.existingOperation.coutReel?.toLocaleString() ||
+                              0}{" "}
+                            DZD
+                          </p>
+                          {operation.additionalCost > 0 && (
+                            <>
+                              <p className="text-orange-600 font-medium">
+                                + Additional:{" "}
+                                {operation.additionalCost.toLocaleString()} DZD
+                              </p>
+                              <p className="text-green-600 font-medium border-t border-gray-200 pt-1">
+                                New Total:{" "}
+                                {(
+                                  (operation.existingOperation.coutReel || 0) +
+                                  operation.additionalCost
+                                ).toLocaleString()}{" "}
+                                DZD
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Indicators Section */}
+                {/* Indicators Section - unchanged */}
                 <div className="mt-4 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-medium text-gray-900">
