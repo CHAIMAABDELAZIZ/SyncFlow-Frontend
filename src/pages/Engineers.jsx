@@ -1,31 +1,85 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, MoreVertical, Filter, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-// Mock data (adjusted for 8 items per page)
-const mockEngineers = Array(40)
-  .fill()
-  .map((_, index) => ({
-    id: index + 1,
-    fullName: "Chaima Abdelaziz",
-    contact: "lc.abdelaziz@esi.dz",
-    role: "Drilling responsible",
-    well: "Well #A-103",
-    createdAt: "30 Apr, 2025",
-    lastConnection:
-      index === 0 ? "Today" : index === 1 ? "Yesterday" : "Week ago",
-  }));
 
 export default function Engineers() {
   const navigate = useNavigate();
   const [selectedEngineers, setSelectedEngineers] = useState([4, 5]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  const [filterRole, setFilterRole] = useState("");
   const [filterLastConnection, setFilterLastConnection] = useState("");
-  const [engineers, setEngineers] = useState(mockEngineers);
+  const [engineers, setEngineers] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
   const itemsPerPage = 8; // 8 items per page to match screenshot
+
+  // Fetch engineers from API
+  useEffect(() => {
+    const fetchEngineers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://localhost:8080/api/utilisateurs");
+        const data = await response.json();
+
+        if (data.success) {
+          setEngineers(data.data);
+        } else {
+          setError("Failed to fetch engineers data");
+        }
+      } catch (err) {
+        console.error("Error fetching engineers:", err);
+        setError("Error loading engineers data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEngineers();
+  }, []);
+
+  // Get role label from enum value
+  const getRoleLabel = (role) => {
+    const roleLabels = {
+      INGENIEUR_FORAGE: "Drilling Engineer",
+      RESPONSABLE_CHANTIER: "Site Manager",
+      GEOLOGUE: "Geologist",
+      CHEF_EQUIPE: "Team Leader",
+      SUPERVISEUR: "Supervisor",
+      ADMIN: "Administrator",
+    };
+    return roleLabels[role] || role;
+  };
+
+  // Get role color for badges
+  const getRoleColor = (role) => {
+    const roleColors = {
+      INGENIEUR_FORAGE: "bg-blue-100 text-blue-800",
+      RESPONSABLE_CHANTIER: "bg-green-100 text-green-800",
+      GEOLOGUE: "bg-purple-100 text-purple-800",
+      CHEF_EQUIPE: "bg-yellow-100 text-yellow-800",
+      SUPERVISEUR: "bg-orange-100 text-orange-800",
+      ADMIN: "bg-red-100 text-red-800",
+    };
+    return roleColors[role] || "bg-gray-100 text-gray-800";
+  };
+
+  // Filter engineers based on search term and role
+  const filteredEngineers = engineers.filter((engineer) => {
+    const matchesSearch =
+      engineer.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      engineer.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      engineer.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole = filterRole === "all" || engineer.role === filterRole;
+
+    return matchesSearch && matchesRole;
+  });
+
+  // Get unique roles for filter dropdown
+  const uniqueRoles = [...new Set(engineers.map((eng) => eng.role))];
 
   const toggleEngineerSelection = (engineerId) => {
     setSelectedEngineers((prev) =>
@@ -34,15 +88,6 @@ export default function Engineers() {
         : [...prev, engineerId]
     );
   };
-
-  // Filter logic
-  const filteredEngineers = engineers.filter((engineer) => {
-    const matchesRole = filterRole ? engineer.role === filterRole : true;
-    const matchesLastConnection = filterLastConnection
-      ? engineer.lastConnection === filterLastConnection
-      : true;
-    return matchesRole && matchesLastConnection;
-  });
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -114,6 +159,34 @@ export default function Engineers() {
   const nextPage = () =>
     currentPage < totalPages && setCurrentPage(currentPage + 1);
   const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+          <p className="mt-4 text-gray-600">Loading engineers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️ Error Loading Data</div>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container bg-[#FEFCFA] min-h-screen p-8">
@@ -421,12 +494,12 @@ export default function Engineers() {
                           />
                         </div>
                         <span className="text-gray-700">
-                          {engineer.fullName}
+                          {engineer.nom + " " + engineer.prenom}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-4 text-center text-gray-500">
-                      {engineer.contact}
+                      {engineer.email}
                     </td>
                     <td className="px-4 py-4 text-center text-gray-500">
                       {engineer.role}
