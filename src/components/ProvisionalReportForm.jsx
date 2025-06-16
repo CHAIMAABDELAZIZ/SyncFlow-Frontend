@@ -64,6 +64,7 @@ export default function ProvisionalReportForm() {
         description: "",
         startDate: "",
         endDate: "",
+        plannedDepth: "",
         operations: [],
       },
       {
@@ -72,6 +73,7 @@ export default function ProvisionalReportForm() {
         description: "",
         startDate: "",
         endDate: "",
+        plannedDepth: "",
         operations: [],
       },
       {
@@ -80,6 +82,7 @@ export default function ProvisionalReportForm() {
         description: "",
         startDate: "",
         endDate: "",
+        plannedDepth: "",
         operations: [],
       },
       {
@@ -88,6 +91,7 @@ export default function ProvisionalReportForm() {
         description: "",
         startDate: "",
         endDate: "",
+        plannedDepth: "",
         operations: [],
       },
     ],
@@ -173,7 +177,7 @@ export default function ProvisionalReportForm() {
                 cost: op.coutPrev || 0,
               }));
 
-              // Store original phase dates by phaseId
+              // Store original phase dates and planned depth by phaseId
               originalPhasesData[phase.id] = {
                 startDate: phase.dateDebutPrevue
                   ? phase.dateDebutPrevue.split("T")[0]
@@ -181,6 +185,7 @@ export default function ProvisionalReportForm() {
                 endDate: phase.dateFinPrevue
                   ? phase.dateFinPrevue.split("T")[0]
                   : "",
+                plannedDepth: phase.profondeurPrevue || "",
               };
 
               // Add to all operations with phase info
@@ -204,6 +209,7 @@ export default function ProvisionalReportForm() {
                 endDate: phase.dateFinPrevue
                   ? phase.dateFinPrevue.split("T")[0]
                   : "",
+                plannedDepth: phase.profondeurPrevue || "",
                 operations: phaseOperations.map((op, index) => ({
                   id: op.id || index + 1,
                   name:
@@ -381,6 +387,14 @@ export default function ProvisionalReportForm() {
     });
   };
 
+  const handlePlannedDepthChange = (phaseIndex, value) => {
+    setFormData((prev) => {
+      const newPhases = [...prev.phases];
+      newPhases[phaseIndex].plannedDepth = value;
+      return { ...prev, phases: newPhases };
+    });
+  };
+
   const handleDateChange = (phaseIndex, dateType, value) => {
     const updatedPhases = [...formData.phases];
     updatedPhases[phaseIndex][dateType] = value;
@@ -538,7 +552,7 @@ export default function ProvisionalReportForm() {
             `Found existing phase ${phase.number} with ID: ${phaseId}`
           );
 
-          // Check for changes in description or dates
+          // Check for changes in description, dates, or planned depth
           const originalPhase = originalPhases[phaseId] || {
             startDate: existingPhase.dateDebutPrevue
               ? existingPhase.dateDebutPrevue.split("T")[0]
@@ -546,14 +560,23 @@ export default function ProvisionalReportForm() {
             endDate: existingPhase.dateFinPrevue
               ? existingPhase.dateFinPrevue.split("T")[0]
               : "",
+            plannedDepth: existingPhase.profondeurPrevue || "",
           };
 
           const descriptionChanged =
             (phase.description || "") !== (existingPhase.description || "");
           const startDateChanged = phase.startDate !== originalPhase.startDate;
           const endDateChanged = phase.endDate !== originalPhase.endDate;
+          const plannedDepthChanged =
+            parseFloat(phase.plannedDepth || 0) !==
+            parseFloat(originalPhase.plannedDepth || 0);
 
-          if (descriptionChanged || startDateChanged || endDateChanged) {
+          if (
+            descriptionChanged ||
+            startDateChanged ||
+            endDateChanged ||
+            plannedDepthChanged
+          ) {
             const phasePayload = {
               id: phaseId,
               forage: { id: forageId },
@@ -561,6 +584,7 @@ export default function ProvisionalReportForm() {
               diametre: sizeToDiametre[phase.size],
               dateDebutPrevue: phase.startDate || null,
               dateFinPrevue: phase.endDate || null,
+              profondeurPrevue: parseFloat(phase.plannedDepth) || null,
               description: phase.description || "",
             };
 
@@ -569,6 +593,7 @@ export default function ProvisionalReportForm() {
               `description changed: ${descriptionChanged},`,
               `start date changed: ${startDateChanged} (${originalPhase.startDate} -> ${phase.startDate}),`,
               `end date changed: ${endDateChanged} (${originalPhase.endDate} -> ${phase.endDate})`,
+              `planned depth changed: ${plannedDepthChanged} (${originalPhase.plannedDepth} -> ${phase.plannedDepth})`,
               "Payload:",
               phasePayload
             );
@@ -594,6 +619,7 @@ export default function ProvisionalReportForm() {
                   [phaseId]: {
                     startDate: phase.startDate,
                     endDate: phase.endDate,
+                    plannedDepth: phase.plannedDepth,
                   },
                 }));
               }
@@ -628,6 +654,7 @@ export default function ProvisionalReportForm() {
             diametre: sizeToDiametre[phase.size],
             dateDebutPrevue: phase.startDate || null,
             dateFinPrevue: phase.endDate || null,
+            profondeurPrevue: parseFloat(phase.plannedDepth) || null,
             description: phase.description || "",
           };
 
@@ -660,12 +687,13 @@ export default function ProvisionalReportForm() {
               `Successfully created phase ${phase.number} with ID: ${phaseId}`
             );
 
-            // Store original dates for new phase
+            // Store original dates and planned depth for new phase
             setOriginalPhases((prev) => ({
               ...prev,
               [phaseId]: {
                 startDate: phase.startDate,
                 endDate: phase.endDate,
+                plannedDepth: phase.plannedDepth,
               },
             }));
           } catch (phaseError) {
@@ -1053,6 +1081,7 @@ export default function ProvisionalReportForm() {
           description: "",
           startDate: "",
           endDate: "",
+          plannedDepth: "",
           operations: [],
         },
         {
@@ -1061,6 +1090,7 @@ export default function ProvisionalReportForm() {
           description: "",
           startDate: "",
           endDate: "",
+          plannedDepth: "",
           operations: [],
         },
         {
@@ -1069,6 +1099,7 @@ export default function ProvisionalReportForm() {
           description: "",
           startDate: "",
           endDate: "",
+          plannedDepth: "",
           operations: [],
         },
         {
@@ -1077,6 +1108,7 @@ export default function ProvisionalReportForm() {
           description: "",
           startDate: "",
           endDate: "",
+          plannedDepth: "",
           operations: [],
         },
       ],
@@ -1170,7 +1202,7 @@ export default function ProvisionalReportForm() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div>
                   <label className="block text-sm mb-1">
                     Date de début prévue
@@ -1216,6 +1248,22 @@ export default function ProvisionalReportForm() {
                       {dateErrors.phases[phaseIndex].endDate}
                     </p>
                   )}
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">
+                    Profondeur prévue (m)
+                  </label>
+                  <input
+                    type="number"
+                    value={phase.plannedDepth || ""}
+                    onChange={(e) =>
+                      handlePlannedDepthChange(phaseIndex, e.target.value)
+                    }
+                    className="w-full focus:outline-none focus:border-orange-500 border border-gray-300 rounded px-3 py-2"
+                    placeholder="0"
+                    step="0.1"
+                    style={{ ...inputStyle, colorScheme: "light" }}
+                  />
                 </div>
               </div>
 
