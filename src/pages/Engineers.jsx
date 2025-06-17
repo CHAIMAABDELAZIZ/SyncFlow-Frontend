@@ -200,21 +200,10 @@ export default function Engineers() {
           <div className="flex flex-col md:flex-row gap-6 mt-4 md:mt-0">
             <div className="p-1">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-5xl text-black font-bold">1,520</span>
-                <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded-md font-medium">
-                  $10.9
-                </span>
+                <span className="text-5xl text-black font-bold">{engineers.length}</span>
+               
               </div>
               <p className="text-gray-500 mt-1">Engineers active</p>
-            </div>
-            <div className="p-1">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-5xl text-black font-bold">78</span>
-                <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded-md font-medium">
-                  $5.9
-                </span>
-              </div>
-              <p className="text-gray-500 mt-1">Engineers to hire</p>
             </div>
           </div>
         </div>

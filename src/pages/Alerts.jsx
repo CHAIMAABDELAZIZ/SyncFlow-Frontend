@@ -281,7 +281,7 @@ export default function Alerts() {
                 placeholder="Search alerts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-black placeholder-gray-400"
               />
             </div>
             <button
@@ -291,6 +291,7 @@ export default function Alerts() {
               Filters
             </button>
           </div>
+
 
           {/* Filter Panel */}
           {showFilters && (

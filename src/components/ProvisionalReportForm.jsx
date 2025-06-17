@@ -1142,38 +1142,36 @@ export default function ProvisionalReportForm() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex mb-6 border-b border-gray-200">
+      <div className="flex mb-6 border-b border-gray-500">
         <button
-          className={`px-6 py-3 text-sm font-medium border-b-2 ${
-            activeTab === "form"
+          className={`px-6 py-3 text-sm font-medium border-b-2 hover:border-orangePtrm border-gray-500 bg-white ${activeTab === "form"
               ? "border-orange-500 text-orange-600"
               : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
           onClick={() => setActiveTab("form")}
         >
           Report Form
         </button>
         <button
-          className={`px-6 py-3 text-sm font-medium border-b-2 ${
-            activeTab === "phases"
+          className={`px-6 py-3 text-sm border-gray-500 hover:border-orangePtrm font-medium border-b-2 bg-white ${activeTab === "phases"
               ? "border-orange-500 text-orange-600"
               : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
           onClick={() => setActiveTab("phases")}
         >
           Phases Overview
         </button>
         <button
-          className={`px-6 py-3 text-sm font-medium border-b-2 ${
-            activeTab === "operations"
+          className={`px-6 py-3 text-sm border-gray-500 hover:border-orangePtrm font-medium border-b-2 bg-white ${activeTab === "operations"
               ? "border-orange-500 text-orange-600"
               : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
           onClick={() => setActiveTab("operations")}
         >
           Operations Management
         </button>
       </div>
+
 
       {/* Tab Content */}
       {activeTab === "form" && (
@@ -1425,17 +1423,11 @@ export default function ProvisionalReportForm() {
           ))}
 
           <div className="flex justify-center space-x-2">
-            <button
-              type="button"
-              onClick={handleDiscard}
-              className="px-4 py-2 border border-gray-200 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-2"
-            >
-              Discard
-            </button>
+      
             <button
               type="submit"
               disabled={hasInvalidOperations}
-              className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`px-4 py-2 bg-white text-orange-500 border-orangePtrm rounded-md hover:bg-orangePtrm hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 hasInvalidOperations ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
@@ -1551,7 +1543,7 @@ export default function ProvisionalReportForm() {
             <h2 className="text-xl font-bold text-gray-800">
               Operations Management
             </h2>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 bg-white">
               <select
                 value={selectedPhase || "all"}
                 onChange={(e) =>
@@ -1559,7 +1551,7 @@ export default function ProvisionalReportForm() {
                     e.target.value === "all" ? null : parseInt(e.target.value)
                   )
                 }
-                className="border border-gray-300 rounded px-3 py-2"
+                className="border border-gray-300 rounded px-3 py-2 bg-white"
               >
                 <option value="all">All Phases</option>
                 {phases.map((phase) => (
@@ -1569,7 +1561,7 @@ export default function ProvisionalReportForm() {
                   </option>
                 ))}
               </select>
-              <span className="text-gray-500">
+              <span className="text-gray-500 bg-white">
                 {
                   operations.filter(
                     (op) => !selectedPhase || op.phaseId === selectedPhase

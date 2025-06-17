@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 
 export default function PrvsnlForm() {
@@ -71,6 +72,8 @@ export default function PrvsnlForm() {
       },
     ],
   });
+
+  const navigate = useNavigate();
 
   // Fetch TypeOperations
   useEffect(() => {
@@ -895,6 +898,10 @@ export default function PrvsnlForm() {
     console.log("Form discarded");
   };
 
+  const handleSave = () => {
+    navigate("/dashboard");
+  };
+
   // Check for invalid operations to disable Save button
   const hasInvalidOperations = formData.phases.some((phase) =>
     phase.operations.some(
@@ -1221,6 +1228,7 @@ export default function PrvsnlForm() {
         </button>
         <button
           type="submit"
+          onClick={handleSave}
           disabled={hasInvalidOperations}
           className={`px-6 py-2 bg-orangePtrm focus:outline-none focus:border-orangePtrm focus:ring-1 focus:ring-orange-600 text-white rounded-md hover:bg-orange-600 transition-all duration-200 shadow-sm ${
             hasInvalidOperations ? "opacity-50 cursor-not-allowed" : ""

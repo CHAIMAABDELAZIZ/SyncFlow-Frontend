@@ -36,9 +36,16 @@ const Sidebar = () => {
     ];
 
     const bottomItems = [
-        { icon: Settings, label: 'Settings', onClick: () => console.log('Settings clicked') },
-        { icon: HelpCircle, label: 'Help', onClick: () => console.log('Help clicked') },
-        { icon: LogOut, label: 'Logout', onClick: () => console.log('Logout clicked') }
+        {
+            icon: LogOut,
+            label: 'Logout',
+            onClick: () => {
+                // Si tu veux aussi effacer l'utilisateur :
+                localStorage.removeItem("user");
+                // Rediriger vers la page de login ou accueil
+                navigate('/'); // ou '/' ou autre route selon ton app
+            }
+        }
     ];
 
     return (
