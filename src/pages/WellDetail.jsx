@@ -445,7 +445,7 @@ export default function WellDetail() {
             {well.coord_y && well.coord_x ? (
               <div className="h-[300px] w-full rounded shadow border">
                 <MapContainer
-                  center={[well.coord_y, well.coord_x]}
+                  center={[31.6806, 6.0711]}
                   zoom={13}
                   style={{ height: "100%", width: "100%" }}
                 >

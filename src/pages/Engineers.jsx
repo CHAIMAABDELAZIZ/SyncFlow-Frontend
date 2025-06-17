@@ -25,7 +25,11 @@ export default function Engineers() {
         const data = await response.json();
 
         if (data.success) {
-          setEngineers(data.data);
+          // filter and keep only engineers
+          const filteredData = data.data.filter(
+            (user) => user.role !== "ADMIN" && user.role !== "MANAGER"
+          );
+          setEngineers(filteredData);
         } else {
           setError("Failed to fetch engineers data");
         }
@@ -200,8 +204,9 @@ export default function Engineers() {
           <div className="flex flex-col md:flex-row gap-6 mt-4 md:mt-0">
             <div className="p-1">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-5xl text-black font-bold">{engineers.length}</span>
-               
+                <span className="text-5xl text-black font-bold">
+                  {engineers.length}
+                </span>
               </div>
               <p className="text-gray-500 mt-1">Engineers active</p>
             </div>
@@ -479,7 +484,7 @@ export default function Engineers() {
                           <img
                             alt="Profile"
                             class="h-full w-full object-cover"
-                            src="/chaima.jpeg"
+                            src="/user.png"
                           />
                         </div>
                         <span className="text-gray-700">

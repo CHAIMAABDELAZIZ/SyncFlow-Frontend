@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 
 export default function Alerts() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -11,6 +13,7 @@ export default function Alerts() {
   const [loading, setLoading] = useState(true);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const itemsPerPage = 10;
+  const navigate = useNavigate();
 
   // Fetch problems from API
   useEffect(() => {
@@ -248,6 +251,10 @@ export default function Alerts() {
     setOpenDropdownId(null);
   };
 
+  const handleRowClick = (alert) => {
+    navigate(`/alerts/${alert.id}`);
+  };
+
   if (loading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
@@ -291,7 +298,6 @@ export default function Alerts() {
               Filters
             </button>
           </div>
-
 
           {/* Filter Panel */}
           {showFilters && (
@@ -399,9 +405,32 @@ export default function Alerts() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentAlerts.map((alert) => (
-                <tr key={alert.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {alert.type}
+                <tr
+                  key={alert.id}
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => handleRowClick(alert)}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <AlertTriangle
+                        size={20}
+                        className={`mr-3 ${
+                          alert.gravite === "CRITIQUE"
+                            ? "text-red-500"
+                            : alert.gravite === "MAJEUR"
+                            ? "text-orange-500"
+                            : "text-yellow-500"
+                        }`}
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {getTypeLabel(alert.type)}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Alert #{alert.id}
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {alert.well}
